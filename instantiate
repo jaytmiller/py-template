@@ -1,0 +1,10 @@
+#! /bin/bash
+
+# Instantiate the project by replacing template variables, etc.
+
+PYT_PKG_NAME=$1
+
+find . -type f | grep -v .git | xargs perl -pi -e "s/\\{\\{PYT_PKG_NAME\\}\\}/${PYT_PKG_NAME}/g"
+
+git mv PYT_PKG_NAME ${PYT_PKG_NAME}
+
