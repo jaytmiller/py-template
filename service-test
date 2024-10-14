@@ -1,0 +1,52 @@
+#! /bin/sh
+
+# The "service tests" work by running the service in a docker container and
+# using pytest to run client cases locally.
+
+set -eu
+
+TEST_MODE=${1:-0}
+SERVER_URL=${2:-"0.0.0.0:5050"}
+CLIENT_URL=${3:-"http://localhost:5050"}
+SVC_UID=${4:-1000}
+SVC_GID=${5:-1000}
+
+PORT=$(echo $SERVER_URL | cut -d ':' -f2)
+
+make build
+
+container=$( docker run -d -it \
+       -p $PORT:$PORT \
+       --env AWS_ACCOUNT_NAME=${AWS_ACCOUNT_NAME} \
+       --env SERVER_URL=${SERVER_URL} \
+       --user $SVC_UID:$SVC_GID \
+       # --cap-drop ALL \
+       {{PYT_PKG_NAME}}-service
+)
+
+
+echo "Waiting 5 secs for startup..."
+sleep 5
+curl http://127.0.0.1:$PORT/check-alive
+
+set +e
+
+case ${TEST_MODE} in
+    service-tests|0)
+        pytest --pdb --doctest-continue-on-failure -vv --profile  service_tests
+        ;;
+    load-test|1)
+        locust  --host http://127.0.0.1:5050  --locustfile service_tests/locustfile.py
+        ;;
+    daemon|exit|2)
+        exit 0
+        ;;
+    *)
+        echo "Unrecognized test mode: ${TEST_MODE}"
+        ;;
+esac
+
+docker logs $container >& live-test.log
+
+docker container stop $container
+docker container prune -f

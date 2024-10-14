@@ -1,0 +1,3 @@
+>>> from {{PYT_PKG_NAME}}.module import what_to_test
+
+>>> what_to_test()

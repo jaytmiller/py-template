@@ -1,0 +1,25 @@
+#! /bin/sh
+
+# Ordinary pytests and coverage running in a local environment.
+
+set -u
+
+TEST_MODE=${1:-0}
+SERVER_URL=${2:-"0.0.0.0:5050"}
+CLIENT_URL=${3:-"http://localhost:5050"}
+
+PORT=$(echo $SERVER_URL | cut -d ':' -f2)
+
+case $TEST_MODE in
+    pytest|0)
+        pytest --pdb --doctest-continue-on-failure -vv --profile  tests
+        ;;
+    coverage|1)
+        coverage run --source {{PYT_PKG_NAME}} -m pytest tests
+        coverage report -m
+        coverage html
+        ;;
+    *)
+        echo "Unrecognized test mode: ${TEST_MODE}"
+        ;;
+esac
